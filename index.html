@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#020617">
 
   <style>
-    body { background:#020617; }
+    body, #game { background:#020617; } /* همیشه مشکی */
     .neon-green { box-shadow:0 0 25px #16ff4f,0 0 50px #16ff4f; }
     .neon-red { box-shadow:0 0 25px #ff1645,0 0 50px #ff1645; }
     .neon-yellow { box-shadow:0 0 25px #ffff3f,0 0 50px #ffff3f; color:#000; }
@@ -68,7 +68,7 @@
 
 <!-- صدا -->
 <audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-<audio id="loseSound" src="https://assets.mixkit.co/active_storage/sfx/2589/2589-preview.mp3"></audio>
+<audio id="loseSound" src="https://assets/mixkit.co/active_storage/sfx/2589/2589-preview.mp3"></audio>
 
 <script>
 let score = 0;
@@ -129,16 +129,9 @@ function startGame(){
   score=0;
   interval = difficulty==="آسان"?1200:difficulty==="نرمال"?1000:difficulty==="سخت"?700:500;
   scoreEl.textContent=score;
-  resetGameStyle();
-  nextRound();
-}
-
-function resetGameStyle(){
+  // پاک کردن کلاس‌های نئون بدون تغییر پس‌زمینه
   game.classList.remove("neon-green","neon-red","neon-yellow");
-  if(difficulty==="آسان") game.style.background="#001100";
-  if(difficulty==="نرمال") game.style.background="#020617";
-  if(difficulty==="سخت") game.style.background="#111111";
-  if(difficulty==="نینجا") game.style.background="#220022";
+  nextRound();
 }
 
 // بازی مرحله‌ای
@@ -178,7 +171,7 @@ function nextRound(){
 
 function gameOver(){
   clearTimeout(timer);
-  resetGameStyle();
+  game.classList.remove("neon-green","neon-red","neon-yellow");
   vibrate(300);
   loseSound.play();
 
@@ -213,7 +206,7 @@ restartBtn.onclick = ()=>{
   difficultyPanel.classList.remove("hidden");
   userSpeed=null;
   difficulty=null;
-  resetGameStyle();
+  game.classList.remove("neon-green","neon-red","neon-yellow");
 };
 
 // تعاملات کاربر
