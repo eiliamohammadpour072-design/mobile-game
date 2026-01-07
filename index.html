@@ -7,27 +7,34 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
+
   <style>
     body { background:#020617; }
-    .neon-green { background:#16ff4f; box-shadow:0 0 25px #16ff4f, 0 0 50px #16ff4f; }
-    .neon-red { background:#ff1645; box-shadow:0 0 25px #ff1645, 0 0 50px #ff1645; }
-    .neon-yellow { background:#ffff3f; box-shadow:0 0 25px #ffff3f, 0 0 50px #ffff3f; color:#000; }
-    .neon-btn { box-shadow:0 0 20px #3b82f6, 0 0 40px #3b82f6; }
+    .neon-green { background:#16ff4f; box-shadow:0 0 25px #16ff4f,0 0 50px #16ff4f; }
+    .neon-red { background:#ff1645; box-shadow:0 0 25px #ff1645,0 0 50px #ff1645; }
+    .neon-yellow { background:#ffff3f; box-shadow:0 0 25px #ffff3f,0 0 50px #ffff3f; color:#000; }
+    .neon-btn { box-shadow:0 0 20px #3b82f6,0 0 40px #3b82f6; }
   </style>
 </head>
 <body class="fixed inset-0 text-white select-none">
 
 <div id="game" class="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200">
 
-  <h1 class="text-3xl font-bold mb-2">🎮 نزن!</h1>
+  <!-- صفحه اول: راهنما و سوال -->
   <div id="tutorial" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
+    <h2 class="text-xl font-bold mb-2">فکر می‌کنی چقدر سریعی؟</h2>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <button class="speed-btn px-3 py-2 bg-yellow-400 rounded-xl neon-btn" data-speed="کند 🐢">کند 🐢</button>
+      <button class="speed-btn px-3 py-2 bg-green-400 rounded-xl neon-btn" data-speed="نرمال 🧠">نرمال 🧠</button>
+      <button class="speed-btn px-3 py-2 bg-blue-400 rounded-xl neon-btn" data-speed="سریع ⚡">سریع ⚡</button>
+      <button class="speed-btn px-3 py-2 bg-purple-400 rounded-xl neon-btn" data-speed="نینجا 🥷">نینجا 🥷</button>
+    </div>
     <p class="mb-1">راهنما:</p>
-    <ul class="list-disc list-inside text-left">
+    <ul class="list-disc list-inside text-left mb-2">
       <li>🟢 سبز → سریع بزن</li>
       <li>🟡 زرد → نگه دار</li>
       <li>🔴 قرمز → نزن</li>
     </ul>
-    <button id="startBtn" class="mt-2 px-6 py-2 bg-blue-500 rounded-2xl neon-btn active:scale-95 transition">شروع بازی</button>
   </div>
 
   <div class="mb-4 text-lg">
@@ -38,6 +45,7 @@
 
 </div>
 
+<!-- صدا -->
 <audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
 <audio id="loseSound" src="https://assets.mixkit.co/active_storage/sfx/2589/2589-preview.mp3"></audio>
 
@@ -47,11 +55,11 @@ let color = "red"; // green, yellow, red
 let interval = 1200;
 let timer;
 let holdStart = null;
+let userSpeed = null; // انتخاب کاربر
 
 const game = document.getElementById("game");
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
-const startBtn = document.getElementById("startBtn");
 const tutorial = document.getElementById("tutorial");
 const winSound = document.getElementById("winSound");
 const loseSound = document.getElementById("loseSound");
@@ -68,17 +76,25 @@ function levelText(s){
   return "🥷 نینجا";
 }
 
+// شروع بازی پس از انتخاب سرعت
+document.querySelectorAll(".speed-btn").forEach(btn=>{
+  btn.onclick=()=>{
+    userSpeed = btn.dataset.speed;
+    tutorial.classList.add("hidden");
+    startGame();
+  };
+});
+
 function startGame(){
   score=0;
   interval=1200;
   scoreEl.textContent=score;
-  tutorial.classList.add("hidden");
   nextRound();
 }
 
 function nextRound(){
   clearTimeout(timer);
-  const rand = Math.random();
+  const rand=Math.random();
   if(rand<0.33) color="green";
   else if(rand<0.66) color="yellow";
   else color="red";
@@ -88,21 +104,19 @@ function nextRound(){
   if(color==="red") game.classList.add("neon-red");
   if(color==="yellow") game.classList.add("neon-yellow");
 
-  // چشمک سریع برای گول زدن (30% فقط برای سبز)
+  // چشمک سریع گول زننده
   if(color==="green" && Math.random()<0.3){
     setTimeout(()=>{
       game.classList.remove("neon-green");
       game.classList.add("neon-red");
       color="red";
-    }, 150);
+    },150);
   }
 
   holdStart = null;
 
   timer = setTimeout(()=>{
-    // اگه رنگ سبز بود و کاربر نزده → باخت
     if(color==="green") gameOver();
-    // اگه رنگ زرد بود و نگه نداشت → باخت
     if(color==="yellow" && holdStart===null) gameOver();
     else nextRound();
   }, interval);
@@ -123,13 +137,26 @@ function gameOver(){
     bestEl.textContent=bestScore;
   }
 
-  alert(`💀 باختی!\nامتیاز: ${score}\nسطح: ${levelText(score)}`);
+  // جمله فان بر اساس انتخاب کاربر
+  let msg="";
+  if(userSpeed){
+    if(userSpeed.includes("کند")){
+      msg = score<5 ? "چقدر کند! فکر کردی نینجا‌ای؟ 😅" : "درست حدس زدی! کند هم خوبه 🐢";
+    } else if(userSpeed.includes("نرمال")){
+      msg = score<10 ? "فکر می‌کردی نرمالی؟ حیف که عقب افتادی 😆" : "خب حدس زدی! عالیه 🧠";
+    } else if(userSpeed.includes("سریع")){
+      msg = score<20 ? "سریع؟ آه… خیلی کند بودی ⚡😂" : "وای! درست حدس زدی! سریع واقعی ⚡";
+    } else if(userSpeed.includes("نینجا")){
+      msg = score<25 ? "نینجا؟ کم آوردی! 🥷😂" : "نینجا واقعی! 🥷🔥";
+    }
+  }
+
+  alert(`💀 باختی!\nامتیاز: ${score}\nسطح: ${levelText(score)}\n${msg}`);
   tutorial.classList.remove("hidden");
 }
 
 game.addEventListener("mousedown", handleClick);
 game.addEventListener("touchstart", handleClick);
-
 game.addEventListener("mouseup", handleRelease);
 game.addEventListener("touchend", handleRelease);
 
@@ -147,18 +174,12 @@ function handleClick(e){
 
 function handleRelease(e){
   if(color==="yellow" && holdStart){
-    const holdTime = Date.now() - holdStart;
-    // اگر کمتر از 500ms نگه داشت → باخت
-    if(holdTime<500){
-      gameOver();
-    } else {
-      score++; scoreEl.textContent=score; winSound.play(); clearTimeout(timer); nextRound();
-    }
+    const holdTime = Date.now()-holdStart;
+    if(holdTime<500){ gameOver(); } 
+    else { score++; scoreEl.textContent=score; winSound.play(); clearTimeout(timer); nextRound(); }
     holdStart=null;
   }
 }
-
-startBtn.onclick=startGame;
 
 // Service Worker PWA
 if("serviceWorker" in navigator){
@@ -168,4 +189,3 @@ if("serviceWorker" in navigator){
 
 </body>
 </html>
-
