@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>بازی نزن!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+
+  <div id="game"
+       class="w-full h-full fixed inset-0 flex flex-col items-center justify-center text-center select-none">
+
+    <h1 class="text-3xl font-bold mb-4">🎮 نزن!</h1>
+    <p class="mb-2">سبز بزن — قرمز نزن</p>
+    <p class="text-xl mb-6">امتیاز: <span id="score">0</span></p>
+
+    <button id="startBtn"
+      class="px-6 py-3 bg-blue-500 rounded-2xl text-lg">
+      شروع بازی
+    </button>
+
+  </div>
+
+<script>
+let score = 0;
+let isGreen = false;
+let interval = 1200;
+let timer;
+
+const game = document.getElementById("game");
+const scoreEl = document.getElementById("score");
+const startBtn = document.getElementById("startBtn");
+
+function startGame() {
+  score = 0;
+  interval = 1200;
+  scoreEl.textContent = score;
+  startBtn.classList.add("hidden");
+
+  nextRound();
+}
+
+function nextRound() {
+  isGreen = Math.random() > 0.5;
+
+  game.style.backgroundColor = isGreen ? "#16a34a" : "#dc2626";
+
+  timer = setTimeout(() => {
+    if (isGreen) gameOver();
+    else nextRound();
+  }, interval);
+
+  interval = Math.max(400, interval - 40);
+}
+
+function gameOver() {
+  clearTimeout(timer);
+  game.style.backgroundColor = "#111827";
+  alert("باختی 😅\nامتیاز: " + score);
+  startBtn.classList.remove("hidden");
+}
+
+game.addEventListener
