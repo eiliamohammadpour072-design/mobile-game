@@ -2,26 +2,55 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>بازی نزن!</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نزن! | بازی سرعت عمل</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+
+  <!-- Neon Style -->
+  <style>
+    body { background:#020617; }
+    .neon-green {
+      background:#16ff4f;
+      box-shadow:0 0 25px #16ff4f, 0 0 50px #16ff4f;
+    }
+    .neon-red {
+      background:#ff1645;
+      box-shadow:0 0 25px #ff1645, 0 0 50px #ff1645;
+    }
+    .neon-btn {
+      box-shadow:0 0 20px #3b82f6, 0 0 40px #3b82f6;
+    }
+  </style>
 </head>
 
-<body class="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+<body class="fixed inset-0 text-white select-none">
 
-  <div id="game"
-       class="w-full h-full fixed inset-0 flex flex-col items-center justify-center text-center select-none">
+<div id="game" class="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200">
 
-    <h1 class="text-3xl font-bold mb-4">🎮 نزن!</h1>
-    <p class="mb-2">سبز بزن — قرمز نزن</p>
-    <p class="text-xl mb-6">امتیاز: <span id="score">0</span></p>
+  <h1 class="text-3xl font-bold mb-2">🎮 نزن!</h1>
+  <p class="mb-2">سبز بزن — قرمز نزن</p>
 
-    <button id="startBtn"
-      class="px-6 py-3 bg-blue-500 rounded-2xl text-lg">
-      شروع بازی
-    </button>
-
+  <div class="mb-4 text-lg">
+    امتیاز: <span id="score">0</span>
+    <span class="mx-2">|</span>
+    رکورد: <span id="best">0</span>
   </div>
+
+  <button id="startBtn"
+    class="px-8 py-3 bg-blue-500 rounded-2xl text-lg neon-btn active:scale-95 transition">
+    شروع بازی
+  </button>
+
+</div>
+
+<audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+<audio id="loseSound" src="https://assets.mixkit.co/active_storage/sfx/2589/2589-preview.mp3"></audio>
 
 <script>
 let score = 0;
@@ -31,35 +60,82 @@ let timer;
 
 const game = document.getElementById("game");
 const scoreEl = document.getElementById("score");
+const bestEl = document.getElementById("best");
 const startBtn = document.getElementById("startBtn");
+const winSound = document.getElementById("winSound");
+const loseSound = document.getElementById("loseSound");
 
-function startGame() {
-  score = 0;
-  interval = 1200;
-  scoreEl.textContent = score;
+let bestScore = localStorage.getItem("bestScore") || 0;
+bestEl.textContent = bestScore;
+
+function vibrate(ms=100){ navigator.vibrate?.(ms); }
+
+function levelText(s){
+  if(s<5) return "🐢 کند";
+  if(s<10) return "🧠 نرمال";
+  if(s<20) return "⚡ سریع";
+  return "🥷 نینجا";
+}
+
+function startGame(){
+  score=0;
+  interval=1200;
+  scoreEl.textContent=score;
   startBtn.classList.add("hidden");
-
   nextRound();
 }
 
-function nextRound() {
+function nextRound(){
   isGreen = Math.random() > 0.5;
+  game.className = "w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200";
+  game.classList.add(isGreen ? "neon-green" : "neon-red");
 
-  game.style.backgroundColor = isGreen ? "#16a34a" : "#dc2626";
-
-  timer = setTimeout(() => {
-    if (isGreen) gameOver();
+  timer = setTimeout(()=>{
+    if(isGreen) gameOver();
     else nextRound();
   }, interval);
 
-  interval = Math.max(400, interval - 40);
+  interval = Math.max(300, interval-40);
 }
 
-function gameOver() {
+function gameOver(){
   clearTimeout(timer);
-  game.style.backgroundColor = "#111827";
-  alert("باختی 😅\nامتیاز: " + score);
+  game.style.background="#020617";
+  vibrate(300);
+  loseSound.play();
+
+  if(score>bestScore){
+    bestScore=score;
+    localStorage.setItem("bestScore", bestScore);
+    bestEl.textContent=bestScore;
+  }
+
+  alert(`باختی 😅\nامتیاز: ${score}\nسطح: ${levelText(score)}`);
   startBtn.classList.remove("hidden");
 }
 
-game.addEventListener
+game.addEventListener("click",()=>{
+  if(!startBtn.classList.contains("hidden")) return;
+
+  if(isGreen){
+    score++;
+    scoreEl.textContent=score;
+    winSound.play();
+    clearTimeout(timer);
+    nextRound();
+  } else {
+    gameOver();
+  }
+});
+
+startBtn.onclick=startGame;
+</script>
+
+<script>
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>
