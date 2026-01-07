@@ -20,7 +20,7 @@
 
 <div id="game" class="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200">
 
-  <!-- صفحه اول: راهنما و سوال -->
+  <!-- صفحه اول: انتخاب سرعت + راهنما -->
   <div id="tutorial" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
     <h2 class="text-xl font-bold mb-2">فکر می‌کنی چقدر سریعی؟</h2>
     <div class="grid grid-cols-2 gap-2 mb-2">
@@ -37,10 +37,20 @@
     </ul>
   </div>
 
+  <!-- امتیاز و رکورد -->
   <div class="mb-4 text-lg">
     امتیاز: <span id="score">0</span>
     <span class="mx-2">|</span>
     رکورد: <span id="best">0</span>
+  </div>
+
+  <!-- پنل نهایی -->
+  <div id="resultPanel" class="hidden fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-90 text-center p-4">
+    <h2 class="text-3xl font-bold mb-2">نتیجه بازی</h2>
+    <p class="text-xl mb-1" id="resultScore"></p>
+    <p class="text-lg mb-2" id="resultLevel"></p>
+    <p class="text-lg mb-4" id="resultMessage"></p>
+    <button id="restartBtn" class="px-6 py-2 bg-blue-500 rounded-2xl neon-btn">بازی دوباره</button>
   </div>
 
 </div>
@@ -55,7 +65,7 @@ let color = "red"; // green, yellow, red
 let interval = 1200;
 let timer;
 let holdStart = null;
-let userSpeed = null; // انتخاب کاربر
+let userSpeed = null;
 
 const game = document.getElementById("game");
 const scoreEl = document.getElementById("score");
@@ -63,6 +73,12 @@ const bestEl = document.getElementById("best");
 const tutorial = document.getElementById("tutorial");
 const winSound = document.getElementById("winSound");
 const loseSound = document.getElementById("loseSound");
+
+const resultPanel = document.getElementById("resultPanel");
+const resultScore = document.getElementById("resultScore");
+const resultLevel = document.getElementById("resultLevel");
+const resultMessage = document.getElementById("resultMessage");
+const restartBtn = document.getElementById("restartBtn");
 
 let bestScore = localStorage.getItem("bestScore") || 0;
 bestEl.textContent = bestScore;
@@ -76,7 +92,7 @@ function levelText(s){
   return "🥷 نینجا";
 }
 
-// شروع بازی پس از انتخاب سرعت
+// انتخاب سرعت اول
 document.querySelectorAll(".speed-btn").forEach(btn=>{
   btn.onclick=()=>{
     userSpeed = btn.dataset.speed;
@@ -104,7 +120,7 @@ function nextRound(){
   if(color==="red") game.classList.add("neon-red");
   if(color==="yellow") game.classList.add("neon-yellow");
 
-  // چشمک سریع گول زننده
+  // چشمک سریع
   if(color==="green" && Math.random()<0.3){
     setTimeout(()=>{
       game.classList.remove("neon-green");
@@ -137,7 +153,6 @@ function gameOver(){
     bestEl.textContent=bestScore;
   }
 
-  // جمله فان بر اساس انتخاب کاربر
   let msg="";
   if(userSpeed){
     if(userSpeed.includes("کند")){
@@ -151,9 +166,18 @@ function gameOver(){
     }
   }
 
-  alert(`💀 باختی!\nامتیاز: ${score}\nسطح: ${levelText(score)}\n${msg}`);
-  tutorial.classList.remove("hidden");
+  // نمایش پنل نهایی
+  resultScore.textContent = `💯 امتیاز: ${score}`;
+  resultLevel.textContent = `🧠 سطح واقعی: ${levelText(score)}`;
+  resultMessage.textContent = msg;
+  resultPanel.classList.remove("hidden");
 }
+
+// ریست بازی
+restartBtn.onclick = ()=>{
+  resultPanel.classList.add("hidden");
+  tutorial.classList.remove("hidden");
+};
 
 game.addEventListener("mousedown", handleClick);
 game.addEventListener("touchstart", handleClick);
