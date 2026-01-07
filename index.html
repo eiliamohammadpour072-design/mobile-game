@@ -4,48 +4,37 @@
   <meta charset="UTF-8">
   <title>نزن! | بازی سرعت عمل</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
-
-  <!-- Neon Style -->
   <style>
     body { background:#020617; }
-    .neon-green {
-      background:#16ff4f;
-      box-shadow:0 0 25px #16ff4f, 0 0 50px #16ff4f;
-    }
-    .neon-red {
-      background:#ff1645;
-      box-shadow:0 0 25px #ff1645, 0 0 50px #ff1645;
-    }
-    .neon-btn {
-      box-shadow:0 0 20px #3b82f6, 0 0 40px #3b82f6;
-    }
+    .neon-green { background:#16ff4f; box-shadow:0 0 25px #16ff4f, 0 0 50px #16ff4f; }
+    .neon-red { background:#ff1645; box-shadow:0 0 25px #ff1645, 0 0 50px #ff1645; }
+    .neon-yellow { background:#ffff3f; box-shadow:0 0 25px #ffff3f, 0 0 50px #ffff3f; color:#000; }
+    .neon-btn { box-shadow:0 0 20px #3b82f6, 0 0 40px #3b82f6; }
   </style>
 </head>
-
 <body class="fixed inset-0 text-white select-none">
 
 <div id="game" class="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200">
 
   <h1 class="text-3xl font-bold mb-2">🎮 نزن!</h1>
-  <p class="mb-2">سبز بزن — قرمز نزن</p>
+  <div id="tutorial" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
+    <p class="mb-1">راهنما:</p>
+    <ul class="list-disc list-inside text-left">
+      <li>🟢 سبز → سریع بزن</li>
+      <li>🟡 زرد → نگه دار</li>
+      <li>🔴 قرمز → نزن</li>
+    </ul>
+    <button id="startBtn" class="mt-2 px-6 py-2 bg-blue-500 rounded-2xl neon-btn active:scale-95 transition">شروع بازی</button>
+  </div>
 
   <div class="mb-4 text-lg">
     امتیاز: <span id="score">0</span>
     <span class="mx-2">|</span>
     رکورد: <span id="best">0</span>
   </div>
-
-  <button id="startBtn"
-    class="px-8 py-3 bg-blue-500 rounded-2xl text-lg neon-btn active:scale-95 transition">
-    شروع بازی
-  </button>
 
 </div>
 
@@ -54,14 +43,16 @@
 
 <script>
 let score = 0;
-let isGreen = false;
+let color = "red"; // green, yellow, red
 let interval = 1200;
 let timer;
+let holdStart = null;
 
 const game = document.getElementById("game");
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
 const startBtn = document.getElementById("startBtn");
+const tutorial = document.getElementById("tutorial");
 const winSound = document.getElementById("winSound");
 const loseSound = document.getElementById("loseSound");
 
@@ -81,25 +72,47 @@ function startGame(){
   score=0;
   interval=1200;
   scoreEl.textContent=score;
-  startBtn.classList.add("hidden");
+  tutorial.classList.add("hidden");
   nextRound();
 }
 
 function nextRound(){
-  isGreen = Math.random() > 0.5;
+  clearTimeout(timer);
+  const rand = Math.random();
+  if(rand<0.33) color="green";
+  else if(rand<0.66) color="yellow";
+  else color="red";
+
   game.className = "w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200";
-  game.classList.add(isGreen ? "neon-green" : "neon-red");
+  if(color==="green") game.classList.add("neon-green");
+  if(color==="red") game.classList.add("neon-red");
+  if(color==="yellow") game.classList.add("neon-yellow");
+
+  // چشمک سریع برای گول زدن (30% فقط برای سبز)
+  if(color==="green" && Math.random()<0.3){
+    setTimeout(()=>{
+      game.classList.remove("neon-green");
+      game.classList.add("neon-red");
+      color="red";
+    }, 150);
+  }
+
+  holdStart = null;
 
   timer = setTimeout(()=>{
-    if(isGreen) gameOver();
+    // اگه رنگ سبز بود و کاربر نزده → باخت
+    if(color==="green") gameOver();
+    // اگه رنگ زرد بود و نگه نداشت → باخت
+    if(color==="yellow" && holdStart===null) gameOver();
     else nextRound();
   }, interval);
 
-  interval = Math.max(300, interval-40);
+  interval = Math.max(400, interval-30);
 }
 
 function gameOver(){
   clearTimeout(timer);
+  game.className = "w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200";
   game.style.background="#020617";
   vibrate(300);
   loseSound.play();
@@ -110,28 +123,44 @@ function gameOver(){
     bestEl.textContent=bestScore;
   }
 
-  alert(`باختی 😅\nامتیاز: ${score}\nسطح: ${levelText(score)}`);
-  startBtn.classList.remove("hidden");
+  alert(`💀 باختی!\nامتیاز: ${score}\nسطح: ${levelText(score)}`);
+  tutorial.classList.remove("hidden");
 }
 
-game.addEventListener("click",()=>{
-  if(!startBtn.classList.contains("hidden")) return;
+game.addEventListener("mousedown", handleClick);
+game.addEventListener("touchstart", handleClick);
 
-  if(isGreen){
-    score++;
-    scoreEl.textContent=score;
-    winSound.play();
-    clearTimeout(timer);
-    nextRound();
-  } else {
+game.addEventListener("mouseup", handleRelease);
+game.addEventListener("touchend", handleRelease);
+
+function handleClick(e){
+  if(tutorial.classList.contains("hidden")===false) return;
+
+  if(color==="green"){
+    score++; scoreEl.textContent=score; winSound.play(); clearTimeout(timer); nextRound();
+  } else if(color==="yellow"){
+    holdStart = Date.now();
+  } else if(color==="red"){
     gameOver();
   }
-});
+}
+
+function handleRelease(e){
+  if(color==="yellow" && holdStart){
+    const holdTime = Date.now() - holdStart;
+    // اگر کمتر از 500ms نگه داشت → باخت
+    if(holdTime<500){
+      gameOver();
+    } else {
+      score++; scoreEl.textContent=score; winSound.play(); clearTimeout(timer); nextRound();
+    }
+    holdStart=null;
+  }
+}
 
 startBtn.onclick=startGame;
-</script>
 
-<script>
+// Service Worker PWA
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js");
 }
