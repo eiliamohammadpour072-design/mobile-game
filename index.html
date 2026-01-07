@@ -10,9 +10,9 @@
 
   <style>
     body { background:#020617; }
-    .neon-green { background:#16ff4f; box-shadow:0 0 25px #16ff4f,0 0 50px #16ff4f; }
-    .neon-red { background:#ff1645; box-shadow:0 0 25px #ff1645,0 0 50px #ff1645; }
-    .neon-yellow { background:#ffff3f; box-shadow:0 0 25px #ffff3f,0 0 50px #ffff3f; color:#000; }
+    .neon-green { box-shadow:0 0 25px #16ff4f,0 0 50px #16ff4f; }
+    .neon-red { box-shadow:0 0 25px #ff1645,0 0 50px #ff1645; }
+    .neon-yellow { box-shadow:0 0 25px #ffff3f,0 0 50px #ffff3f; color:#000; }
     .neon-btn { box-shadow:0 0 20px #3b82f6,0 0 40px #3b82f6; }
   </style>
 </head>
@@ -20,8 +20,19 @@
 
 <div id="game" class="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200">
 
-  <!-- صفحه اول: انتخاب سرعت + راهنما -->
-  <div id="tutorial" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
+  <!-- صفحه اول: انتخاب درجه سختی -->
+  <div id="difficultyPanel" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
+    <h2 class="text-xl font-bold mb-2">درجه سختی را انتخاب کن</h2>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <button class="diff-btn px-3 py-2 bg-green-400 rounded-xl neon-btn" data-diff="آسان">آسان 🐢</button>
+      <button class="diff-btn px-3 py-2 bg-yellow-400 rounded-xl neon-btn" data-diff="نرمال">نرمال 🧠</button>
+      <button class="diff-btn px-3 py-2 bg-orange-400 rounded-xl neon-btn" data-diff="سخت">سخت ⚡</button>
+      <button class="diff-btn px-3 py-2 bg-purple-400 rounded-xl neon-btn" data-diff="نینجا">نینجا 🥷</button>
+    </div>
+  </div>
+
+  <!-- صفحه دوم: انتخاب سرعت -->
+  <div id="speedPanel" class="hidden bg-gray-800 bg-opacity-80 p-4 rounded-xl mb-4 max-w-sm">
     <h2 class="text-xl font-bold mb-2">فکر می‌کنی چقدر سریعی؟</h2>
     <div class="grid grid-cols-2 gap-2 mb-2">
       <button class="speed-btn px-3 py-2 bg-yellow-400 rounded-xl neon-btn" data-speed="کند 🐢">کند 🐢</button>
@@ -61,24 +72,28 @@
 
 <script>
 let score = 0;
-let color = "red"; // green, yellow, red
+let color = "red";
 let interval = 1200;
 let timer;
 let holdStart = null;
 let userSpeed = null;
+let difficulty = null;
 
 const game = document.getElementById("game");
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
-const tutorial = document.getElementById("tutorial");
-const winSound = document.getElementById("winSound");
-const loseSound = document.getElementById("loseSound");
+
+const difficultyPanel = document.getElementById("difficultyPanel");
+const speedPanel = document.getElementById("speedPanel");
 
 const resultPanel = document.getElementById("resultPanel");
 const resultScore = document.getElementById("resultScore");
 const resultLevel = document.getElementById("resultLevel");
 const resultMessage = document.getElementById("resultMessage");
 const restartBtn = document.getElementById("restartBtn");
+
+const winSound = document.getElementById("winSound");
+const loseSound = document.getElementById("loseSound");
 
 let bestScore = localStorage.getItem("bestScore") || 0;
 bestEl.textContent = bestScore;
@@ -92,37 +107,58 @@ function levelText(s){
   return "🥷 نینجا";
 }
 
-// انتخاب سرعت اول
+// انتخاب درجه سختی
+document.querySelectorAll(".diff-btn").forEach(btn=>{
+  btn.onclick=()=>{
+    difficulty = btn.dataset.diff;
+    difficultyPanel.classList.add("hidden");
+    speedPanel.classList.remove("hidden");
+  };
+});
+
+// انتخاب سرعت کاربر
 document.querySelectorAll(".speed-btn").forEach(btn=>{
   btn.onclick=()=>{
     userSpeed = btn.dataset.speed;
-    tutorial.classList.add("hidden");
+    speedPanel.classList.add("hidden");
     startGame();
   };
 });
 
 function startGame(){
   score=0;
-  interval=1200;
+  interval = difficulty==="آسان"?1200:difficulty==="نرمال"?1000:difficulty==="سخت"?700:500;
   scoreEl.textContent=score;
+  resetGameStyle();
   nextRound();
 }
 
+function resetGameStyle(){
+  game.classList.remove("neon-green","neon-red","neon-yellow");
+  if(difficulty==="آسان") game.style.background="#001100";
+  if(difficulty==="نرمال") game.style.background="#020617";
+  if(difficulty==="سخت") game.style.background="#111111";
+  if(difficulty==="نینجا") game.style.background="#220022";
+}
+
+// بازی مرحله‌ای
 function nextRound(){
   clearTimeout(timer);
+  game.classList.remove("neon-green","neon-red","neon-yellow");
+
+  // انتخاب رنگ
   const rand=Math.random();
   if(rand<0.33) color="green";
   else if(rand<0.66) color="yellow";
   else color="red";
 
-  game.className = "w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200";
   if(color==="green") game.classList.add("neon-green");
-  if(color==="red") game.classList.add("neon-red");
   if(color==="yellow") game.classList.add("neon-yellow");
+  if(color==="red") game.classList.add("neon-red");
 
   // چشمک سریع
   if(color==="green" && Math.random()<0.3){
-    setTimeout(()=>{
+    let flash = setTimeout(()=>{
       game.classList.remove("neon-green");
       game.classList.add("neon-red");
       color="red";
@@ -142,8 +178,7 @@ function nextRound(){
 
 function gameOver(){
   clearTimeout(timer);
-  game.className = "w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200";
-  game.style.background="#020617";
+  resetGameStyle();
   vibrate(300);
   loseSound.play();
 
@@ -166,7 +201,6 @@ function gameOver(){
     }
   }
 
-  // نمایش پنل نهایی
   resultScore.textContent = `💯 امتیاز: ${score}`;
   resultLevel.textContent = `🧠 سطح واقعی: ${levelText(score)}`;
   resultMessage.textContent = msg;
@@ -176,16 +210,20 @@ function gameOver(){
 // ریست بازی
 restartBtn.onclick = ()=>{
   resultPanel.classList.add("hidden");
-  tutorial.classList.remove("hidden");
+  difficultyPanel.classList.remove("hidden");
+  userSpeed=null;
+  difficulty=null;
+  resetGameStyle();
 };
 
+// تعاملات کاربر
 game.addEventListener("mousedown", handleClick);
 game.addEventListener("touchstart", handleClick);
 game.addEventListener("mouseup", handleRelease);
 game.addEventListener("touchend", handleRelease);
 
 function handleClick(e){
-  if(tutorial.classList.contains("hidden")===false) return;
+  if(difficultyPanel.classList.contains("hidden")===false || speedPanel.classList.contains("hidden")===false) return;
 
   if(color==="green"){
     score++; scoreEl.textContent=score; winSound.play(); clearTimeout(timer); nextRound();
